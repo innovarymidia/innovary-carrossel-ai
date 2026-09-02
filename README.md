@@ -9,8 +9,19 @@ Sistema inteligente de múltiplos agentes de IA desenvolvido para a agência **I
 1. **Lucas Prado (Estrategista B2B)**: Mapeia as dores viscerais do dono do restaurante (taxas de 27% a 30% do iFood, motoboy parado na terça-feira, dinheiro jogado fora no botão "Impulsionar").
 2. **Helena Brandão (Copywriter)**: Escreve o roteiro completo lâmina a lâmina seguindo a estrutura de retenção (Hook magnético, Diagnóstico, A virada de jogo com Tráfego Hiperlocal, Checklist e CTA matador) + legenda persuasiva completa com hashtags.
 3. **Mateus Castro (Diretor de Arte)**: Aplica um dos **6 estilos visuais da marca** com a paleta oficial da Innovary Mídia (`#0a0a0a`, `#ff4500`, `#ea580c` e fonte Space Grotesk).
-4. **Camila Siqueira (Revisora QA)**: Valida contraste, limites de caracteres e safe zones para garantir leitura perfeita no feed do Instagram.
-5. **Felipe Noronha (Exportador & Automação)**: Renderiza e empacota todas as lâminas em alta definição (1080x1350) em arquivo `.ZIP` pronto para postar, com suporte à Instagram Graph API para quando quiser ativar o piloto automático.
+4. **Camila Siqueira (Revisora QA)**: Executa a **Auto-Análise Prévia Obrigatória**, validando safe zones, contraste e bloqueio estrito de caracteres proibidos.
+5. **Felipe Noronha (Exportador e Automação)**: Renderiza e empacota todas as lâminas em alta definição (1080x1350) em arquivo `.ZIP` pronto para postar, com suporte à Instagram Graph API para quando quiser ativar o piloto automático.
+
+---
+
+## 🛡️ Sistema de Auto-Análise e Regras Estritas de Redação
+
+- **Safe Zones e Proporção 4:5 Calibrada**: Todas as lâminas (1 a 7) possuem a mesma harmonia visual, tipografia adaptativa via `clamp()` e espaçamento equilibrado, eliminando qualquer risco de corte de texto no feed do Instagram.
+- **Auto-Análise Obrigatória**: O sistema audita automaticamente densidade de texto (máximo 280 caracteres por lâmina) e auto-corrige qualquer excesso antes de apresentar o carrossel na tela.
+- **Bloqueio Total de Caracteres**: 
+  - O caractere `&` é estritamente proibido e convertido para ` e `.
+  - Travessões (`—`, `–` ou `-` isolado) são estritamente proibidos e substituídos por vírgulas ou pontos naturais.
+  - Sanitização ativa tanto na geração por IA quanto na edição manual do usuário.
 
 ---
 
@@ -19,8 +30,8 @@ Sistema inteligente de múltiplos agentes de IA desenvolvido para a agência **I
 1. **Dark Fire (Assinatura Innovary)**: Fundo preto espacial, títulos em gradiente laranja fogo, brilho sutil (glow) e cards translúcidos.
 2. **Clean Authority**: Fundo claro editorial de alto contraste, tipografia forte, badges laranjas e moldura minimalista.
 3. **Alerta de Prejuízo**: Visual de alto choque com avisos de perigo e ênfase na perda de dinheiro com taxas abusivas.
-4. **Data & Growth**: Estilo dashboard/métricas focado em ROI, faturamento no canal próprio e custo por pedido.
-5. **Thread & Perfil**: Estilo bate-papo de autoridade com avatar da agência e tom de consultoria direta.
+4. **Data e Growth**: Estilo dashboard/métricas focado em ROI, faturamento no canal próprio e custo por pedido.
+5. **Thread e Perfil**: Estilo bate-papo de autoridade com avatar da agência e tom de consultoria direta.
 6. **Sunset Food Gradient**: Gradiente quente e gastronômico que evoca apetite e energia para food service.
 
 ---

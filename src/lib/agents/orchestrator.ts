@@ -3,8 +3,9 @@ import { CarouselProject, GenerationInput, AgentStatus, SlideData } from '../typ
 import { StrategistAgent } from './strategist';
 import { CopywriterAgent } from './copywriter';
 import { DesignerAgent } from './designer';
-import { QualityReviewerAgent } from './qa';
+import { QualityReviewerAgent, QAReport } from './qa';
 import { PublisherAgent } from './publisher';
+import { sanitizeText, sanitizeProject } from '../sanitizer';
 
 export interface AgentUpdateCallback {
   (agents: AgentStatus[]): void;
@@ -49,7 +50,7 @@ export class MultiAgentOrchestrator {
         title: this.qa.title,
         avatar: this.qa.avatar,
         status: 'idle',
-        message: 'Aguardando lâminas para validar safe zones e contraste...',
+        message: 'Executará Auto-Análise (Safe Zones, Proporção e Bloqueio de & e travessões)...',
       },
       {
         role: 'publisher',
@@ -82,21 +83,21 @@ export class MultiAgentOrchestrator {
     // ETAPA 1: AGENTE ESTRATEGISTA B2B FOOD SERVICE
     // =========================================================================
     updateAgent('strategist', 'running', 'Analisando o perfil do dono de delivery e dores do iFood...');
-    await delay(500);
+    await delay(350);
 
     const brief = this.strategist.analyze(input);
     updateAgent(
       'strategist',
       'completed',
       'Ângulo estratégico definido!',
-      `Dor central: ${brief.corePain.slice(0, 70)}...`
+      `Dor central: ${brief.corePain.slice(0, 65)}...`
     );
 
     // =========================================================================
     // ETAPA 2: AGENTE COPYWRITER & ROTEIRISTA
     // =========================================================================
-    updateAgent('copywriter', 'running', `Escrevendo roteiro persuasivo de ${input.slideCount} lâminas...`);
-    await delay(600);
+    updateAgent('copywriter', 'running', `Escrevendo roteiro de ${input.slideCount} lâminas com retenção...`);
+    await delay(400);
 
     let copyOutput = await this.tryGeminiGeneration(input, brief);
     if (!copyOutput) {
@@ -107,60 +108,64 @@ export class MultiAgentOrchestrator {
     updateAgent(
       'copywriter',
       'completed',
-      `${copyOutput.slides.length} lâminas e legenda prontas!`,
-      `Hook: "${copyOutput.slides[0].headline.slice(0, 60)}..."`
+      `${copyOutput.slides.length} lâminas geradas!`,
+      `Hook: "${copyOutput.slides[0].headline.slice(0, 50)}..."`
     );
 
     // =========================================================================
     // ETAPA 3: AGENTE DIRETOR DE ARTE
     // =========================================================================
     updateAgent('designer', 'running', `Formatando no padrão 1080x1350 no estilo ${input.themeStyle}...`);
-    await delay(400);
+    await delay(300);
 
     const styleSpec = this.designer.getStyleSpec(input.themeStyle);
     updateAgent(
       'designer',
       'completed',
-      `Estilo ${styleSpec.name} aplicado com sucesso!`,
+      `Estilo ${styleSpec.name} aplicado!`,
       `Paleta oficial: Laranja ${styleSpec.accentColor} | Space Grotesk`
     );
 
     // =========================================================================
-    // ETAPA 4: AGENTE REVISOR DE QUALIDADE (QA)
+    // ETAPA 4: AGENTE REVISOR DE QUALIDADE (QA & AUTO-ANÁLISE OBRIGATÓRIA)
     // =========================================================================
-    updateAgent('qa', 'running', 'Validando Safe Zones do Instagram, contraste e leitura...');
-    await delay(400);
+    updateAgent('qa', 'running', 'Executando Auto-Análise prévia: checando Safe Zones, corte e caracteres proibidos...');
+    await delay(450);
 
-    const qaResult = this.qa.review(copyOutput.slides);
+    // Executa auto-análise e correção automática deSafe Zones e caracteres
+    const qaReport: QAReport = this.qa.reviewAndAutoCorrect(copyOutput.slides);
+
     updateAgent(
       'qa',
       'completed',
-      `Aprovado com nota ${qaResult.score}/100!`,
-      'Todos os slides dentro das margens seguras e alta retenção.'
+      `Auto-Análise concluída com nota ${qaReport.score}/100!`,
+      `Safe Zones validadas. Bloqueio de & e travessões 100% ativo.`
     );
 
     // =========================================================================
     // ETAPA 5: AGENTE PUBLICADOR / EXPORTADOR
     // =========================================================================
-    updateAgent('publisher', 'completed', 'Pronto para visualização, edição e download em lote!');
+    updateAgent('publisher', 'completed', 'Pronto para visualização impecável e download!');
 
-    const project: CarouselProject = {
+    const baseProject: CarouselProject = {
       id: 'proj-' + Math.random().toString(36).substring(2, 9),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       topic: input.topic || 'Como parar de perder margem no delivery',
       targetAudience: 'Donos de Hamburguerias, Pizzarias e Restaurantes Food Service',
       niche: 'Tráfego Pago para Delivery',
-      slideCount: copyOutput.slides.length,
+      slideCount: qaReport.sanitizedSlides.length,
       themeStyle: input.themeStyle,
       caption: copyOutput.caption,
       hashtags: copyOutput.hashtags,
-      slides: copyOutput.slides,
+      slides: qaReport.sanitizedSlides,
       status: 'reviewed',
       authorHandle: '@innovarymidia',
+      qaReport,
     };
 
-    return project;
+    // Garante sanitização final em todo o projeto
+    return sanitizeProject(baseProject);
   }
 
   private async tryGeminiGeneration(input: GenerationInput, brief: any): Promise<{ slides: SlideData[]; caption: string; hashtags: string[] } | null> {
@@ -171,26 +176,30 @@ export class MultiAgentOrchestrator {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-      const prompt = `Você é um copywriter sênior da agência @innovarymidia (www.innovarymidia.com.br).
-Sua missão: criar um carrossel de alto impacto para o Instagram com EXATAMENTE ${input.slideCount} slides focado em donos de delivery / food service (hamburguerias, pizzarias, sushis, marmitarias).
-O objetivo é fazer o dono do delivery sentir a dor de depender do iFood (taxas de 27% a 30%), motoboy parado na terça-feira e queimar dinheiro no botão "Impulsionar", e ver a Innovary Mídia como a solução com Tráfego Hiperlocal para canal próprio / WhatsApp.
+      const prompt = `Você é o copywriter da agência @innovarymidia (www.innovarymidia.com.br).
+Crie um carrossel para Instagram de EXATAMENTE ${input.slideCount} lâminas para donos de delivery e restaurantes (food service).
+Tema: "${input.topic || 'Como parar de perder margem no delivery'}"
 
-Tema solicitado: "${input.topic || 'Como parar de perder margem no delivery'}"
+REGRAS OBRIGATÓRIAS E CRÍTICAS DE ESTILO:
+1. NUNCA use o caractere & em nenhum texto. Use sempre a palavra "e".
+2. NUNCA use travessão (— ou –) nem hífens isolados. Use vírgulas ou pontos naturais.
+3. DIMENSIONAMENTO PERFEITO: Mantenha os textos curtos e concisos (headline máx 75 caracteres, subtítulo máx 100 caracteres) para caberem com folga e elegância na proporção 4:5 vertical (1080x1350) sem NENHUM corte.
+4. O slide 1 deve ser um HOOK forte. O slide final deve ser um CTA direto para a DM da @innovarymidia.
 
-Retorne APENAS um JSON válido no seguinte formato sem blocos markdown adicionais:
+Retorne APENAS um JSON válido:
 {
   "slides": [
     {
       "slideNumber": 1,
       "totalSlides": ${input.slideCount},
       "type": "hook",
-      "badge": "TEXTO CURTO DO BADGE",
-      "headline": "Título instigante e magnético (máx 90 chars)",
-      "subtitle": "Subtítulo curto (máx 110 chars)",
-      "ctaButtonText": "Arraste para o lado ➔"
+      "badge": "ALERTA PARA DONOS DE DELIVERY",
+      "headline": "Título curto e instigante",
+      "subtitle": "Subtítulo conciso",
+      "ctaButtonText": "Arraste para entender ➔"
     }
   ],
-  "caption": "Legenda completa do post formatada com quebras de linha e chamada para a DM da @innovarymidia",
+  "caption": "Legenda completa formatada com chamada para o direct da @innovarymidia",
   "hashtags": ["#marketingparadelivery", "#gestaodetrafego", "#innovarymidia"]
 }`;
 
@@ -204,8 +213,15 @@ Retorne APENAS um JSON válido no seguinte formato sem blocos markdown adicionai
           s.id = `slide-${idx + 1}`;
           s.slideNumber = idx + 1;
           s.totalSlides = parsed.slides.length;
+          s.headline = sanitizeText(s.headline);
+          s.subtitle = sanitizeText(s.subtitle);
+          s.badge = sanitizeText(s.badge);
         });
-        return parsed;
+        return {
+          slides: parsed.slides,
+          caption: sanitizeText(parsed.caption),
+          hashtags: parsed.hashtags || [],
+        };
       }
     } catch (e) {
       console.warn('Gemini API call skipped or failed, using built-in strategic engine', e);

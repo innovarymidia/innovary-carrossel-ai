@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Copy, Check, FileText, Hash, Send } from 'lucide-react';
+import { sanitizeText } from '../lib/sanitizer';
 
 interface CaptionBoxProps {
   caption: string;
@@ -10,7 +11,8 @@ interface CaptionBoxProps {
 export const CaptionBox: React.FC<CaptionBoxProps> = ({ caption, hashtags, onUpdateCaption }) => {
   const [copied, setCopied] = useState(false);
 
-  const fullText = `${caption}\n\n${hashtags.join(' ')}`;
+  const cleanCaption = sanitizeText(caption);
+  const fullText = `${cleanCaption}\n\n${hashtags.join(' ')}`;
 
   const handleCopy = async () => {
     try {
@@ -56,8 +58,8 @@ export const CaptionBox: React.FC<CaptionBoxProps> = ({ caption, hashtags, onUpd
       {/* Caixa de Texto da Legenda */}
       <textarea
         rows={7}
-        value={caption}
-        onChange={(e) => onUpdateCaption && onUpdateCaption(e.target.value)}
+        value={cleanCaption}
+        onChange={(e) => onUpdateCaption && onUpdateCaption(sanitizeText(e.target.value))}
         placeholder="Texto da legenda..."
         className="w-full bg-brand-bg border border-brand-border rounded-xl p-3 text-xs text-zinc-200 leading-relaxed focus:outline-none focus:border-brand-orange transition-colors resize-none font-sans"
       />
@@ -66,7 +68,7 @@ export const CaptionBox: React.FC<CaptionBoxProps> = ({ caption, hashtags, onUpd
       <div>
         <div className="flex items-center gap-1.5 text-xs font-semibold text-brand-muted mb-2">
           <Hash className="w-3.5 h-3.5 text-brand-orange" />
-          Hashtags Segmentadas para Food Service & Tráfego:
+          Hashtags Segmentadas para Food Service e Tráfego:
         </div>
         <div className="flex flex-wrap gap-1.5">
           {hashtags.map((tag, i) => (

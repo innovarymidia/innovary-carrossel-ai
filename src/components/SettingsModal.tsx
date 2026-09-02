@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS public.slides (
               ⚙️
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Configurações & Integrações</h3>
+              <h3 className="font-bold text-base text-white">Configurações e Integrações</h3>
               <p className="text-xs text-brand-muted">Vercel, Supabase, Gemini e Instagram</p>
             </div>
           </div>

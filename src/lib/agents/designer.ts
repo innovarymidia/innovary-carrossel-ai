@@ -23,7 +23,7 @@ export interface StyleSpec {
 
 export class DesignerAgent {
   name = 'Mateus Castro';
-  title = 'Diretor de Arte & Identidade Visual Innovary';
+  title = 'Diretor de Arte e Identidade Visual Innovary';
   avatar = '🎨';
 
   getStyleSpec(styleId: ThemeStyle): StyleSpec {

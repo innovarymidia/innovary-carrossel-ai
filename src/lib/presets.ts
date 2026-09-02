@@ -1,6 +1,6 @@
 export interface TopicPreset {
   id: string;
-  category: 'iFood & Taxas' | 'Vendas nos Dias Fracos' | 'Botão Impulsionar' | 'Retenção & WhatsApp' | 'Escala de Pedidos';
+  category: 'iFood e Taxas' | 'Vendas nos Dias Fracos' | 'Botão Impulsionar' | 'Retenção e WhatsApp' | 'Escala de Pedidos';
   title: string;
   targetCategory: string;
   painHook: string;
@@ -10,7 +10,7 @@ export interface TopicPreset {
 export const TOPIC_PRESETS: TopicPreset[] = [
   {
     id: 'ifood-taxa-30',
-    category: 'iFood & Taxas',
+    category: 'iFood e Taxas',
     title: 'O iFood está ficando com 27% a 30% do seu faturamento bruto?',
     targetCategory: 'Restaurantes e Deliveries em Geral',
     painHook: 'Você trabalha a noite inteira, gerencia a cozinha no calor, e no fim do mês 30% do seu lucro vai para o aplicativo.',
@@ -34,7 +34,7 @@ export const TOPIC_PRESETS: TopicPreset[] = [
   },
   {
     id: 'whatsapp-proprio',
-    category: 'Retenção & WhatsApp',
+    category: 'Retenção e WhatsApp',
     title: 'Como transformar cada cliente do iFood em um cliente do seu canal próprio',
     targetCategory: 'Pizzarias, Açaí e Marmitarias',
     painHook: 'Pagar comissão duas vezes pelo mesmo cliente é o maior veneno para o caixa de qualquer food service.',
@@ -50,7 +50,7 @@ export const TOPIC_PRESETS: TopicPreset[] = [
   },
   {
     id: 'margem-liquida-lucro',
-    category: 'iFood & Taxas',
+    category: 'iFood e Taxas',
     title: 'Vender R$ 50 mil e sobrar R$ 3 mil: A armadilha do delivery sem canal próprio',
     targetCategory: 'Food Service Geral',
     painHook: 'Volume de vendas não é dinheiro no bolso. Sem tráfego direto para o seu cardápio, você está apenas trabalhando de funcionário do aplicativo.',
@@ -125,7 +125,7 @@ export const THEME_CONFIGS = {
   },
   data_growth: {
     id: 'data_growth',
-    name: 'Data & Growth',
+    name: 'Data e Growth',
     tag: 'Métricas ROI',
     bg: '#090D14',
     cardBg: '#111827',
@@ -141,7 +141,7 @@ export const THEME_CONFIGS = {
   },
   thread_social: {
     id: 'thread_social',
-    name: 'Thread & Perfil',
+    name: 'Thread e Perfil',
     tag: 'Bate-papo B2B',
     bg: '#0D0E12',
     cardBg: '#161922',
@@ -153,7 +153,7 @@ export const THEME_CONFIGS = {
     badgeBg: 'rgba(255, 77, 21, 0.15)',
     badgeBorder: 'rgba(255, 77, 21, 0.3)',
     badgeText: '#FF4D15',
-    description: 'Formato conversa direta/thread. Parece um conselho valioso entre donos de negócios.',
+    description: 'Formato conversa direta com a agência. Um conselho valioso entre donos de negócios.',
   },
   sunset_gradient: {
     id: 'sunset_gradient',

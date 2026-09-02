@@ -165,7 +165,7 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({
           style={{ background: 'linear-gradient(135deg, #FF3D00 0%, #EA580C 100%)' }}
         >
           <Sparkles className="w-4 h-4 animate-spin text-white" />
-          <span>{isGenerating ? 'Equipe de Agentes Trabalhando...' : 'Disparar Agentes & Gerar Carrossel'}</span>
+          <span>{isGenerating ? 'Equipe de Agentes Trabalhando...' : 'Disparar Agentes e Gerar Carrossel'}</span>
         </button>
       </form>
     </div>

@@ -40,6 +40,7 @@ export interface CarouselProject {
   slides: SlideData[];
   status: 'draft' | 'reviewed' | 'downloaded' | 'published';
   authorHandle: string;
+  qaReport?: any;
 }
 
 export type AgentRole = 

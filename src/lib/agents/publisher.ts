@@ -4,7 +4,7 @@ import { CarouselProject } from '../types';
 
 export class PublisherAgent {
   name = 'Felipe Noronha';
-  title = 'Gerenciador de Exportação & Automação Meta';
+  title = 'Gerenciador de Exportação e Automação Meta';
   avatar = '📦';
 
   /**

@@ -1,18 +1,16 @@
 import React, { forwardRef } from 'react';
 import { SlideData, ThemeStyle } from '../lib/types';
 import { THEME_CONFIGS } from '../lib/presets';
+import { sanitizeText } from '../lib/sanitizer';
 import { 
   Flame, 
   AlertTriangle, 
   TrendingUp, 
-  ArrowRight, 
-  MessageSquare, 
   CheckCircle2, 
   Bookmark, 
   Send, 
   ChevronRight,
-  Sparkles,
-  DollarSign
+  Sparkles
 } from 'lucide-react';
 
 interface SlideCanvasProps {
@@ -28,8 +26,21 @@ export const SlideCanvas = forwardRef<HTMLDivElement, SlideCanvasProps>(
     const isFirst = slide.slideNumber === 1;
     const isLast = slide.slideNumber === slide.totalSlides;
 
-    // Dimensões nativas 1080x1350 (4:5 vertical do Instagram)
-    // Quando exibido no preview, o container pai define o scale ou tamanho relativo.
+    // Sanitização em tempo de renderização
+    const headline = sanitizeText(slide.headline);
+    const subtitle = sanitizeText(slide.subtitle);
+    const badge = sanitizeText(slide.badge);
+    const customNote = sanitizeText(slide.customNote);
+    const ctaButtonText = sanitizeText(slide.ctaButtonText);
+
+    // Ajuste dinâmico do tamanho da fonte da headline para evitar estouro
+    const getHeadlineFontSize = () => {
+      if (isFirst) return 'clamp(1.5rem, 3.8vw, 2.1rem)';
+      if (headline.length > 70) return 'clamp(1.2rem, 3vw, 1.5rem)';
+      if (headline.length > 50) return 'clamp(1.3rem, 3.2vw, 1.65rem)';
+      return 'clamp(1.4rem, 3.5vw, 1.8rem)';
+    };
+
     return (
       <div
         ref={ref}
@@ -42,20 +53,20 @@ export const SlideCanvas = forwardRef<HTMLDivElement, SlideCanvasProps>(
           background: config.bg,
           color: config.textColor,
           fontFamily: "'Space Grotesk', system-ui, sans-serif",
-          padding: isExporting ? '85px 75px' : '7%',
+          padding: isExporting ? '85px 75px' : '6% 6.5%',
         }}
       >
         {/* =================================================================== */}
-        {/* ELEMENTOS DECORATIVOS DE FUNDO CONFORME O TEMA                     */}
+        {/* ELEMENTOS DECORATIVOS DE FUNDO                                     */}
         {/* =================================================================== */}
         {themeStyle === 'dark_fire' && (
           <>
             <div 
-              className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none blur-3xl opacity-30"
+              className="absolute -top-28 -right-28 w-80 h-80 rounded-full pointer-events-none blur-3xl opacity-25"
               style={{ background: 'radial-gradient(circle, #FF3D00 0%, transparent 70%)' }}
             />
             <div 
-              className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full pointer-events-none blur-3xl opacity-20"
+              className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full pointer-events-none blur-3xl opacity-20"
               style={{ background: 'radial-gradient(circle, #EA580C 0%, transparent 70%)' }}
             />
             <div 
@@ -71,11 +82,11 @@ export const SlideCanvas = forwardRef<HTMLDivElement, SlideCanvasProps>(
         {themeStyle === 'alert_loss' && (
           <>
             <div 
-              className="absolute top-0 inset-x-0 h-3"
+              className="absolute top-0 inset-x-0 h-2.5"
               style={{ background: 'repeating-linear-gradient(45deg, #FF2E2E, #FF2E2E 15px, #000 15px, #000 30px)' }}
             />
             <div 
-              className="absolute -top-20 -left-20 w-80 h-80 rounded-full pointer-events-none blur-3xl opacity-25"
+              className="absolute -top-20 -left-20 w-80 h-80 rounded-full pointer-events-none blur-3xl opacity-20"
               style={{ background: 'radial-gradient(circle, #FF2E2E 0%, transparent 70%)' }}
             />
           </>
@@ -86,14 +97,14 @@ export const SlideCanvas = forwardRef<HTMLDivElement, SlideCanvasProps>(
             className="absolute inset-0 pointer-events-none opacity-10"
             style={{
               backgroundImage: 'linear-gradient(to right, rgba(255, 61, 0, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 61, 0, 0.15) 1px, transparent 1px)',
-              backgroundSize: '36px 36px',
+              backgroundSize: '32px 32px',
             }}
           />
         )}
 
         {themeStyle === 'sunset_gradient' && (
           <div 
-            className="absolute inset-0 pointer-events-none opacity-40"
+            className="absolute inset-0 pointer-events-none opacity-35"
             style={{
               background: 'radial-gradient(ellipse at bottom, rgba(234, 88, 12, 0.45) 0%, transparent 75%)',
             }}
@@ -101,46 +112,45 @@ export const SlideCanvas = forwardRef<HTMLDivElement, SlideCanvasProps>(
         )}
 
         {/* =================================================================== */}
-        {/* CABEÇALHO DO SLIDE: LOGO / PERFIL + NUMERAÇÃO                      */}
+        {/* CABEÇALHO DO SLIDE: MARCA + NUMERAÇÃO                              */}
         {/* =================================================================== */}
-        <div className="relative z-10 flex items-center justify-between w-full border-b pb-4 mb-4"
+        <div 
+          className="relative z-10 flex items-center justify-between w-full border-b pb-3 mb-2 shrink-0"
           style={{ borderColor: themeStyle === 'clean_authority' ? '#E5E7EB' : 'rgba(255, 255, 255, 0.1)' }}
         >
           {/* Perfil Innovary Mídia */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white shadow-md text-xs"
+              className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white shadow-md"
               style={{ background: 'linear-gradient(135deg, #FF3D00, #EA580C)' }}
             >
-              <Flame className="w-5 h-5 text-white" />
+              <Flame className="w-4 h-4 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-sm tracking-tight leading-none" style={{ color: config.textColor }}>
+              <span className="font-bold text-xs tracking-tight leading-none" style={{ color: config.textColor }}>
                 Innovary Mídia
               </span>
-              <span className="text-[11px] font-medium tracking-wide mt-0.5" style={{ color: config.textMuted }}>
+              <span className="text-[10px] font-medium tracking-wide mt-0.5" style={{ color: config.textMuted }}>
                 {authorHandle}
               </span>
             </div>
           </div>
 
           {/* Numeração de Páginas */}
-          <div className="flex items-center gap-2">
-            <div 
-              className="px-3 py-1 rounded-full text-xs font-bold tracking-wider"
-              style={{ 
-                background: config.badgeBg, 
-                color: config.badgeText,
-                border: `1px solid ${config.badgeBorder}` 
-              }}
-            >
-              {String(slide.slideNumber).padStart(2, '0')} / {String(slide.totalSlides).padStart(2, '0')}
-            </div>
+          <div 
+            className="px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider"
+            style={{ 
+              background: config.badgeBg, 
+              color: config.badgeText,
+              border: `1px solid ${config.badgeBorder}` 
+            }}
+          >
+            {String(slide.slideNumber).padStart(2, '0')} / {String(slide.totalSlides).padStart(2, '0')}
           </div>
         </div>
 
-        {/* Barra de Progresso Fina no Topo */}
-        <div className="relative z-10 w-full h-1 rounded-full overflow-hidden mb-6" style={{ background: 'rgba(128, 128, 128, 0.2)' }}>
+        {/* Barra de Progresso Fina */}
+        <div className="relative z-10 w-full h-1 rounded-full overflow-hidden mb-3 shrink-0" style={{ background: 'rgba(128, 128, 128, 0.18)' }}>
           <div 
             className="h-full rounded-full transition-all duration-300"
             style={{ 
@@ -151,171 +161,169 @@ export const SlideCanvas = forwardRef<HTMLDivElement, SlideCanvasProps>(
         </div>
 
         {/* =================================================================== */}
-        {/* CONTEÚDO PRINCIPAL (CORPO DO SLIDE)                                 */}
+        {/* ÁREA CENTRAL DO CONTEÚDO (PROPORCIONAL E RESPIRADA)                 */}
         {/* =================================================================== */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center my-auto">
-          {/* Badge Temático de Destaque */}
-          {slide.badge && (
-            <div className="mb-4">
+        <div className="relative z-10 flex-1 flex flex-col justify-center min-h-0 py-2">
+          {/* Badge de Destaque */}
+          {badge && (
+            <div className="mb-2 shrink-0">
               <span 
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-sm"
                 style={{
                   background: config.badgeBg,
                   color: config.badgeText,
                   border: `1px solid ${config.badgeBorder}`,
                 }}
               >
-                {themeStyle === 'alert_loss' && <AlertTriangle className="w-3.5 h-3.5" />}
-                {themeStyle === 'data_growth' && <TrendingUp className="w-3.5 h-3.5" />}
-                {themeStyle === 'dark_fire' && <Sparkles className="w-3.5 h-3.5" />}
-                {slide.badge}
+                {themeStyle === 'alert_loss' && <AlertTriangle className="w-3 h-3" />}
+                {themeStyle === 'data_growth' && <TrendingUp className="w-3 h-3" />}
+                {themeStyle === 'dark_fire' && <Sparkles className="w-3 h-3" />}
+                {badge}
               </span>
             </div>
           )}
 
           {/* TÍTULO PRINCIPAL (HEADLINE) */}
           <h1 
-            className="font-extrabold tracking-tight leading-[1.15] mb-4 text-left"
+            className="font-extrabold tracking-tight leading-[1.2] mb-3 text-left"
             style={{
-              fontSize: isFirst ? '2rem' : '1.75rem',
+              fontSize: getHeadlineFontSize(),
               color: config.textColor,
             }}
           >
-            {slide.headline}
+            {headline}
           </h1>
 
           {/* SUBTÍTULO OU COMPLEMENTO */}
-          {slide.subtitle && (
+          {subtitle && (
             <p 
-              className="text-sm md:text-base font-medium leading-relaxed mb-5"
+              className="text-xs sm:text-sm font-medium leading-relaxed mb-3 line-clamp-3"
               style={{ color: config.textMuted }}
             >
-              {slide.subtitle}
+              {subtitle}
             </p>
           )}
 
-          {/* CORPO DE TEXTO / PARÁGRAFOS EM CARD */}
-          {slide.bodyText && slide.bodyText.length > 0 && (
+          {/* PARÁGRAFOS EXPLICATIVOS CONCISOS */}
+          {slide.bodyText && slide.bodyText.length > 0 && !slide.points && (
             <div 
-              className="p-4 rounded-xl mb-4 border space-y-2.5 backdrop-blur-sm shadow-sm"
+              className="p-3.5 rounded-xl mb-3 border space-y-2 backdrop-blur-sm shadow-sm"
               style={{
                 background: config.cardBg,
                 borderColor: config.cardBorder,
               }}
             >
               {slide.bodyText.map((paragraph, idx) => (
-                <p key={idx} className="text-xs md:text-sm leading-relaxed" style={{ color: config.textColor }}>
-                  {paragraph}
+                <p key={idx} className="text-xs sm:text-sm leading-relaxed" style={{ color: config.textColor }}>
+                  {sanitizeText(paragraph)}
                 </p>
               ))}
             </div>
           )}
 
-          {/* BULLET POINTS (LISTA DE BENEFÍCIOS OU DORES) */}
+          {/* LISTA DE TÓPICOS (COM ESPAÇAMENTO E ALTURA CALIBRADOS) */}
           {slide.points && slide.points.length > 0 && (
-            <div className="space-y-2.5 my-3">
-              {slide.points.map((pt, idx) => (
+            <div className="space-y-2 my-2">
+              {slide.points.slice(0, 4).map((pt, idx) => (
                 <div 
                   key={idx} 
-                  className="flex items-start gap-2.5 p-2.5 rounded-lg border text-xs md:text-sm"
+                  className="flex items-center gap-2.5 p-2 rounded-lg border text-xs sm:text-sm"
                   style={{
                     background: config.cardBg,
                     borderColor: config.cardBorder,
                   }}
                 >
                   <div 
-                    className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                    className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
                     style={{ background: config.badgeBg, color: config.badgeText }}
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <CheckCircle2 className="w-3 h-3" />
                   </div>
-                  <span className="font-medium leading-tight" style={{ color: config.textColor }}>
-                    {pt}
+                  <span className="font-medium leading-snug" style={{ color: config.textColor }}>
+                    {sanitizeText(pt)}
                   </span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* MÉTRICA DE DESTAQUE (PARA SLIDE DE COMPARAÇÃO / LUCRO) */}
+          {/* MÉTRICA DE DESTAQUE */}
           {slide.metricNumber && (
             <div 
-              className="p-5 rounded-2xl border text-center my-3 relative overflow-hidden"
+              className="p-4 rounded-xl border text-center my-2 relative overflow-hidden"
               style={{
                 background: config.cardBg,
                 borderColor: config.accent,
-                boxShadow: `0 0 25px -5px ${config.accent}40`,
+                boxShadow: `0 0 20px -5px ${config.accent}30`,
               }}
             >
               <div 
-                className="text-4xl md:text-5xl font-extrabold tracking-tight mb-1"
+                className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-0.5"
                 style={{ color: config.accent }}
               >
                 {slide.metricNumber}
               </div>
-              <div className="text-xs md:text-sm font-semibold uppercase tracking-wider" style={{ color: config.textMuted }}>
-                {slide.metricLabel}
+              <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider" style={{ color: config.textMuted }}>
+                {sanitizeText(slide.metricLabel)}
               </div>
             </div>
           )}
 
-          {/* NOTA PERSONALIZADA OU CITAÇÃO */}
-          {slide.customNote && (
+          {/* NOTA DE DESTAQUE */}
+          {customNote && (
             <div 
-              className="p-3 rounded-lg border-l-4 text-xs font-semibold italic mt-2"
+              className="p-2.5 rounded-lg border-l-4 text-[11px] font-semibold mt-1"
               style={{
                 background: config.badgeBg,
                 borderColor: config.accent,
                 color: config.textColor,
               }}
             >
-              💡 {slide.customNote}
+              💡 {customNote}
             </div>
           )}
 
-          {/* BOTÃO DE CTA (ESPECIAL NO ÚLTIMO SLIDE) */}
-          {isLast && slide.ctaButtonText && (
-            <div className="mt-4 pt-2">
+          {/* BOTÃO DE CTA (SLIDE FINAL) */}
+          {isLast && ctaButtonText && (
+            <div className="mt-3 pt-1">
               <div 
-                className="w-full py-3.5 px-6 rounded-xl font-bold text-center text-sm shadow-lg flex items-center justify-center gap-2 text-white"
+                className="w-full py-3 px-5 rounded-xl font-bold text-center text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 text-white"
                 style={{ 
                   background: config.accentGradient,
-                  boxShadow: '0 10px 25px -5px rgba(255, 61, 0, 0.4)' 
+                  boxShadow: '0 8px 20px -4px rgba(255, 61, 0, 0.4)' 
                 }}
               >
-                <Send className="w-4 h-4" />
-                <span>{slide.ctaButtonText}</span>
+                <Send className="w-3.5 h-3.5" />
+                <span>{ctaButtonText}</span>
               </div>
             </div>
           )}
         </div>
 
         {/* =================================================================== */}
-        {/* RODAPÉ DO SLIDE: INDICAÇÃO DE ARRASTE OU CTA                        */}
+        {/* RODAPÉ DO SLIDE                                                    */}
         {/* =================================================================== */}
         <div 
-          className="relative z-10 pt-4 mt-4 border-t flex items-center justify-between text-xs"
+          className="relative z-10 pt-3 mt-2 border-t flex items-center justify-between text-[11px] shrink-0"
           style={{ 
             borderColor: themeStyle === 'clean_authority' ? '#E5E7EB' : 'rgba(255, 255, 255, 0.1)',
             color: config.textMuted 
           }}
         >
-          {/* Lado Esquerdo: Tag da Agência */}
-          <div className="flex items-center gap-2 font-semibold">
-            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: config.accent }} />
+          <div className="flex items-center gap-1.5 font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: config.accent }} />
             <span>Tráfego Pago para Food Service</span>
           </div>
 
-          {/* Lado Direito: Arraste para o lado ou Salvar Post */}
-          <div className="flex items-center gap-1.5 font-bold" style={{ color: config.accent }}>
+          <div className="flex items-center gap-1 font-bold" style={{ color: config.accent }}>
             {!isLast ? (
               <>
                 <span>Arraste para o lado</span>
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </>
             ) : (
               <div className="flex items-center gap-1">
-                <Bookmark className="w-4 h-4" />
+                <Bookmark className="w-3.5 h-3.5" />
                 <span>Salvar post</span>
               </div>
             )}

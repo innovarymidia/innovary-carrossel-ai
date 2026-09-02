@@ -14,6 +14,7 @@ import { saveCarousel, getCarousels } from '../lib/supabase';
 import { Header } from '../components/Header';
 import { GeneratorForm } from '../components/GeneratorForm';
 import { AgentTimeline } from '../components/AgentTimeline';
+import { AutoAuditPanel } from '../components/AutoAuditPanel';
 import { CarouselViewer } from '../components/CarouselViewer';
 import { SlideEditor } from '../components/SlideEditor';
 import { CaptionBox } from '../components/CaptionBox';
@@ -306,6 +307,11 @@ export default function HomePage() {
 
         {/* STATUS DA EQUIPE MULTI-AGENTE */}
         <AgentTimeline agents={agentStatuses} isGenerating={isGenerating} />
+
+        {/* PAINEL DE AUTO-ANÁLISE DE QUALIDADE PRÉ-APRESENTAÇÃO */}
+        {project && project.qaReport && (
+          <AutoAuditPanel qaReport={project.qaReport} />
+        )}
 
         {/* ÁREA DE VISUALIZAÇÃO E EDIÇÃO DO PROJETO */}
         {project && (

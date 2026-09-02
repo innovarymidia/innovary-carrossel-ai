@@ -1,5 +1,6 @@
 import React from 'react';
 import { SlideData } from '../lib/types';
+import { sanitizeText } from '../lib/sanitizer';
 import { Edit3, Type, Tag, AlignLeft, CheckSquare, Send, Sparkles } from 'lucide-react';
 
 interface SlideEditorProps {
@@ -9,15 +10,16 @@ interface SlideEditorProps {
 
 export const SlideEditor: React.FC<SlideEditorProps> = ({ slide, onUpdateSlide }) => {
   const handleChange = (field: keyof SlideData, value: any) => {
+    const cleanValue = typeof value === 'string' ? sanitizeText(value) : value;
     onUpdateSlide({
       ...slide,
-      [field]: value,
+      [field]: cleanValue,
     });
   };
 
   const handlePointChange = (index: number, val: string) => {
     const currentPoints = [...(slide.points || [])];
-    currentPoints[index] = val;
+    currentPoints[index] = sanitizeText(val);
     handleChange('points', currentPoints);
   };
 

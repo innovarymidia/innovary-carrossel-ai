@@ -379,7 +379,17 @@ export default function HomePage() {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        onSaved={() => showToast('Configurações salvas!')}
+        onSaved={async () => {
+          showToast('Configurações atualizadas! Sincronizando com Supabase...');
+          try {
+            const list = await getCarousels();
+            setHistory(list);
+            if (list.length > 0) {
+              setProject(list[0]);
+              setSelectedTheme(list[0].themeStyle);
+            }
+          } catch (e) {}
+        }}
       />
     </div>
   );

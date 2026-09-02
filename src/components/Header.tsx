@@ -65,6 +65,16 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
+          {/* Atalho Supabase */}
+          <button
+            onClick={onOpenSettings}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-medium transition-colors bg-brand-card hover:bg-brand-cardHover text-zinc-300 border-brand-border hover:border-emerald-500/40"
+            title="Conexão do Supabase (carousels, slides, system_settings)"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-[11px] text-zinc-200">Supabase</span>
+          </button>
+
           {/* Botão de Configurações */}
           <button
             onClick={onOpenSettings}

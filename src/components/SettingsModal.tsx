@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { X, Key, Database, Instagram, Check, Copy, ExternalLink, ShieldCheck } from 'lucide-react';
+import { 
+  X, 
+  Key, 
+  Database, 
+  Instagram, 
+  Check, 
+  Copy, 
+  ExternalLink, 
+  ShieldCheck, 
+  RefreshCw, 
+  CheckCircle2, 
+  AlertTriangle 
+} from 'lucide-react';
+import { testSupabaseConnection } from '../lib/supabase';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -16,18 +29,63 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
   const [activeTab, setActiveTab] = useState<'apis' | 'sql' | 'instagram'>('apis');
   const [copiedSql, setCopiedSql] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isTestingSupabase, setIsTestingSupabase] = useState(false);
+  const [testFeedback, setTestFeedback] = useState<{
+    success: boolean;
+    message: string;
+    error?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setGeminiKey(localStorage.getItem('innovary_gemini_key') || '');
-      setSupabaseUrl(localStorage.getItem('innovary_supabase_url') || '');
-      setSupabaseKey(localStorage.getItem('innovary_supabase_key') || '');
+      setSupabaseUrl(
+        localStorage.getItem('innovary_supabase_url') || 
+        process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+      );
+      setSupabaseKey(
+        localStorage.getItem('innovary_supabase_key') || 
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      );
       setMetaToken(localStorage.getItem('innovary_meta_token') || '');
       setPageId(localStorage.getItem('innovary_page_id') || '');
+      setTestFeedback(null);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const handleTestConnection = async () => {
+    if (!supabaseUrl.trim() || !supabaseKey.trim()) {
+      setTestFeedback({
+        success: false,
+        message: 'Preencha a URL do Projeto e a Anon Key antes de testar.',
+      });
+      return;
+    }
+
+    setIsTestingSupabase(true);
+    setTestFeedback(null);
+
+    // Salva temporariamente no localStorage para o client instanciar
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('innovary_supabase_url', supabaseUrl.trim());
+      localStorage.setItem('innovary_supabase_key', supabaseKey.trim());
+    }
+
+    try {
+      const res = await testSupabaseConnection();
+      setTestFeedback(res);
+    } catch (err: any) {
+      setTestFeedback({
+        success: false,
+        message: 'Erro inesperado ao tentar conectar.',
+        error: err.message || String(err),
+      });
+    } finally {
+      setIsTestingSupabase(false);
+    }
+  };
 
   const handleSave = () => {
     if (typeof window !== 'undefined') {
@@ -42,30 +100,70 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
       setIsSaved(false);
       onSaved();
       onClose();
-    }, 1200);
+    }, 1000);
   };
 
   const sqlSchemaSnippet = `-- Execute este SQL no Supabase SQL Editor:
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS public.carousels (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     topic TEXT NOT NULL,
-    slide_count INT DEFAULT 6,
-    theme_style TEXT DEFAULT 'dark_fire',
+    target_audience TEXT DEFAULT 'Donos de Delivery e Restaurantes Food Service',
+    niche TEXT DEFAULT 'Food Service / Tráfego Pago para Delivery',
+    slide_count INTEGER NOT NULL DEFAULT 6,
+    theme_style TEXT NOT NULL DEFAULT 'dark_fire',
     caption TEXT,
-    hashtags TEXT[]
+    hashtags TEXT[],
+    status TEXT DEFAULT 'draft',
+    is_published BOOLEAN DEFAULT FALSE,
+    published_at TIMESTAMP WITH TIME ZONE,
+    instagram_post_id TEXT,
+    user_id UUID
 );
 
 CREATE TABLE IF NOT EXISTS public.slides (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     carousel_id UUID REFERENCES public.carousels(id) ON DELETE CASCADE,
-    slide_number INT NOT NULL,
+    slide_number INTEGER NOT NULL,
     slide_type TEXT NOT NULL,
     headline TEXT NOT NULL,
     subtitle TEXT,
     body_text TEXT,
-    badge TEXT
-);`;
+    badge TEXT,
+    highlight_word TEXT,
+    cta_text TEXT,
+    image_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.system_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    key TEXT UNIQUE NOT NULL,
+    value JSONB NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+INSERT INTO public.system_settings (key, value)
+VALUES (
+    'profile',
+    jsonb_build_object(
+        'handle', '@innovarymidia',
+        'agency_name', 'Innovary Mídia',
+        'website', 'www.innovarymidia.com.br',
+        'cta_default', 'Mande uma mensagem na nossa DM para alavancar os pedidos do seu delivery.'
+    )
+) ON CONFLICT (key) DO NOTHING;
+
+ALTER TABLE public.carousels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.slides ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Acesso público temporário para carrosséis" ON public.carousels FOR ALL USING (true);
+CREATE POLICY "Acesso público temporário para slides" ON public.slides FOR ALL USING (true);
+CREATE POLICY "Acesso público temporário para configurações" ON public.system_settings FOR ALL USING (true);`;
 
   const copySql = async () => {
     await navigator.clipboard.writeText(sqlSchemaSnippet);
@@ -99,78 +197,52 @@ CREATE TABLE IF NOT EXISTS public.slides (
         <div className="flex border-b border-brand-border px-5 gap-4">
           <button
             onClick={() => setActiveTab('apis')}
-            className={`py-3 text-xs font-bold border-b-2 transition-all ${
+            className={`py-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5 ${
               activeTab === 'apis'
-                ? 'border-brand-orange text-brand-orange'
-                : 'border-transparent text-brand-muted hover:text-white'
+                ? 'text-brand-orange border-brand-orange'
+                : 'text-brand-muted border-transparent hover:text-white'
             }`}
           >
-            Chaves de API
+            <Key className="w-3.5 h-3.5" />
+            Supabase & APIs
           </button>
           <button
             onClick={() => setActiveTab('sql')}
-            className={`py-3 text-xs font-bold border-b-2 transition-all ${
+            className={`py-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5 ${
               activeTab === 'sql'
-                ? 'border-brand-orange text-brand-orange'
-                : 'border-transparent text-brand-muted hover:text-white'
+                ? 'text-brand-orange border-brand-orange'
+                : 'text-brand-muted border-transparent hover:text-white'
             }`}
           >
+            <Database className="w-3.5 h-3.5" />
             Script SQL Supabase
           </button>
           <button
             onClick={() => setActiveTab('instagram')}
-            className={`py-3 text-xs font-bold border-b-2 transition-all ${
+            className={`py-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5 ${
               activeTab === 'instagram'
-                ? 'border-brand-orange text-brand-orange'
-                : 'border-transparent text-brand-muted hover:text-white'
+                ? 'text-brand-orange border-brand-orange'
+                : 'text-brand-muted border-transparent hover:text-white'
             }`}
           >
-            Postagem Automática Meta
+            <Instagram className="w-3.5 h-3.5" />
+            Instagram API
           </button>
         </div>
 
-        {/* Conteúdo da Aba */}
-        <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+        {/* Conteúdo das Abas */}
+        <div className="p-5 max-h-[70vh] overflow-y-auto space-y-4">
           {activeTab === 'apis' && (
             <div className="space-y-4">
-              {/* Google Gemini API */}
-              <div className="p-4 rounded-xl bg-brand-bg border border-brand-border">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Key className="w-3.5 h-3.5 text-brand-orange" />
-                    Google Gemini API Key (Opcional - Gratuito)
-                  </label>
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] text-brand-orange hover:underline flex items-center gap-1"
-                  >
-                    Obter Chave Grátis
-                    <ExternalLink className="w-2.5 h-2.5" />
-                  </a>
-                </div>
-                <input
-                  type="password"
-                  value={geminiKey}
-                  onChange={(e) => setGeminiKey(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="w-full bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange transition-colors"
-                />
-                <p className="text-[11px] text-brand-muted mt-1.5">
-                  Se deixado em branco, o sistema utilizará o motor estratégico integrado com 8 temas validados.
-                </p>
-              </div>
-
               {/* Supabase URL e Anon Key */}
               <div className="p-4 rounded-xl bg-brand-bg border border-brand-border space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-white flex items-center gap-1.5">
                     <Database className="w-3.5 h-3.5 text-emerald-400" />
-                    Configuração Supabase (Opcional)
+                    Conexão Supabase
                   </label>
                   <a
-                    href="https://supabase.com"
+                    href="https://supabase.com/dashboard"
                     target="_blank"
                     rel="noreferrer"
                     className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1"
@@ -185,9 +257,12 @@ CREATE TABLE IF NOT EXISTS public.slides (
                   <input
                     type="text"
                     value={supabaseUrl}
-                    onChange={(e) => setSupabaseUrl(e.target.value)}
-                    placeholder="https://xyz.supabase.co"
-                    className="w-full bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange transition-colors"
+                    onChange={(e) => {
+                      setSupabaseUrl(e.target.value);
+                      setTestFeedback(null);
+                    }}
+                    placeholder="https://xyzabcdefg.supabase.co"
+                    className="w-full bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange transition-colors font-mono"
                   />
                 </div>
 
@@ -196,11 +271,88 @@ CREATE TABLE IF NOT EXISTS public.slides (
                   <input
                     type="password"
                     value={supabaseKey}
-                    onChange={(e) => setSupabaseKey(e.target.value)}
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR5..."
-                    className="w-full bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange transition-colors"
+                    onChange={(e) => {
+                      setSupabaseKey(e.target.value);
+                      setTestFeedback(null);
+                    }}
+                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    className="w-full bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange transition-colors font-mono"
                   />
                 </div>
+
+                <div className="pt-1 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestConnection}
+                    disabled={isTestingSupabase || !supabaseUrl || !supabaseKey}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40"
+                  >
+                    {isTestingSupabase ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Database className="w-3.5 h-3.5" />
+                    )}
+                    {isTestingSupabase ? 'Testando tabelas...' : 'Testar Conexão Supabase'}
+                  </button>
+                  {testFeedback && (
+                    <span className="text-[10px] text-zinc-400">
+                      {testFeedback.success ? 'Conexão validada' : 'Atenção'}
+                    </span>
+                  )}
+                </div>
+
+                {testFeedback && (
+                  <div
+                    className={`p-2.5 rounded-lg text-xs border flex items-start gap-2 ${
+                      testFeedback.success
+                        ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+                        : 'bg-red-950/40 border-red-500/40 text-red-300'
+                    }`}
+                  >
+                    {testFeedback.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <p className="font-semibold">{testFeedback.message}</p>
+                      {testFeedback.error && (
+                        <p className="text-[11px] opacity-80 mt-0.5 font-mono">
+                          {testFeedback.error}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Google Gemini API Key */}
+              <div className="p-4 rounded-xl bg-brand-bg border border-brand-border">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-brand-orange" />
+                    Google Gemini API Key (Opcional)
+                  </label>
+                  <a
+                    href="https://aistudio.google.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-brand-orange hover:underline flex items-center gap-1"
+                  >
+                    Obter Grátis no Google AI Studio
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+                <input
+                  type="password"
+                  value={geminiKey}
+                  onChange={(e) => setGeminiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange transition-colors"
+                />
+                <p className="text-[11px] text-brand-muted mt-1.5">
+                  Se deixado em branco, o sistema utilizará o motor estratégico integrado com 8 temas validados.
+                </p>
               </div>
             </div>
           )}
@@ -216,10 +368,10 @@ CREATE TABLE IF NOT EXISTS public.slides (
                   className="px-2.5 py-1 rounded-lg bg-brand-orange/20 text-brand-orange border border-brand-orange/40 text-xs font-semibold flex items-center gap-1 hover:bg-brand-orange hover:text-white transition-all"
                 >
                   {copiedSql ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  {copiedSql ? 'Copiado!' : 'Copiar SQL'}
+                  {copiedSql ? 'Copiado!' : 'Copiar SQL Completo'}
                 </button>
               </div>
-              <pre className="p-3.5 rounded-xl bg-black border border-brand-border text-[11px] font-mono text-zinc-300 overflow-x-auto">
+              <pre className="p-3.5 rounded-xl bg-black border border-brand-border text-[11px] font-mono text-zinc-300 overflow-x-auto max-h-60">
                 {sqlSchemaSnippet}
               </pre>
               <p className="text-xs text-brand-muted">
@@ -236,7 +388,7 @@ CREATE TABLE IF NOT EXISTS public.slides (
                   Postagem Automática no Instagram (Fase 2)
                 </div>
                 <p className="text-xs text-zinc-300 leading-relaxed mb-3">
-                  Conforme combinado, a postagem inicial é <strong>100% manual e segura</strong> (você baixa as imagens em alta resolução em 1 clique e publica).
+                  A postagem inicial recomendada é <strong>100% manual e segura</strong> (você baixa as lâminas em alta definição 1080x1350 em 1 clique e publica).
                 </p>
                 <div className="space-y-2.5 text-xs text-brand-muted">
                   <div className="p-2.5 rounded-lg bg-brand-card border border-brand-border">
@@ -276,7 +428,7 @@ CREATE TABLE IF NOT EXISTS public.slides (
         <div className="p-5 border-t border-brand-border flex items-center justify-between bg-brand-bg/50">
           <span className="text-xs text-brand-muted flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            Dados salvos com segurança no seu navegador.
+            Salvo com segurança localmente e no Supabase.
           </span>
           <button
             onClick={handleSave}

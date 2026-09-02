@@ -6,6 +6,7 @@ import { DesignerAgent } from './designer';
 import { QualityReviewerAgent, QAReport } from './qa';
 import { PublisherAgent } from './publisher';
 import { sanitizeText, sanitizeProject } from '../sanitizer';
+import { ensureUUID } from '../supabase';
 
 export interface AgentUpdateCallback {
   (agents: AgentStatus[]): void;
@@ -99,7 +100,8 @@ export class MultiAgentOrchestrator {
     updateAgent('copywriter', 'running', `Escrevendo roteiro de ${input.slideCount} lâminas com retenção...`);
     await delay(400);
 
-    let copyOutput = await this.tryGeminiGeneration(input, brief);
+    // Tenta geração via LLM (OpenRouter / Gemini) ou fallback para motor estratégico
+    let copyOutput = await this.tryLLMGeneration(input, brief);
     if (!copyOutput) {
       // Fallback para o motor estratégico local
       copyOutput = this.copywriter.generate(input, brief);
@@ -148,7 +150,7 @@ export class MultiAgentOrchestrator {
     updateAgent('publisher', 'completed', 'Pronto para visualização impecável e download!');
 
     const baseProject: CarouselProject = {
-      id: 'proj-' + Math.random().toString(36).substring(2, 9),
+      id: ensureUUID(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       topic: input.topic || 'Como parar de perder margem no delivery',
@@ -168,64 +170,111 @@ export class MultiAgentOrchestrator {
     return sanitizeProject(baseProject);
   }
 
-  private async tryGeminiGeneration(input: GenerationInput, brief: any): Promise<{ slides: SlideData[]; caption: string; hashtags: string[] } | null> {
-    const apiKey = input.apiKey || process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-    if (!apiKey) return null;
+  private async tryLLMGeneration(input: GenerationInput, brief: any): Promise<{ slides: SlideData[]; caption: string; hashtags: string[] } | null> {
+    const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || (typeof window !== 'undefined' ? localStorage.getItem('innovary_openrouter_key') : null);
+    const geminiKey = input.apiKey || process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
-    try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    if (!openrouterKey && !geminiKey) return null;
 
-      const prompt = `Você é o copywriter da agência @innovarymidia (www.innovarymidia.com.br).
-Crie um carrossel para Instagram de EXATAMENTE ${input.slideCount} lâminas para donos de delivery e restaurantes (food service).
+    const prompt = `Você é o copywriter estrategista da agência @innovarymidia (www.innovarymidia.com.br), especializada em tráfego e vendas para restaurantes e delivery.
+Crie um carrossel para Instagram de EXATAMENTE ${input.slideCount} lâminas.
 Tema: "${input.topic || 'Como parar de perder margem no delivery'}"
 
-REGRAS OBRIGATÓRIAS E CRÍTICAS DE ESTILO:
-1. NUNCA use o caractere & em nenhum texto. Use sempre a palavra "e".
-2. NUNCA use travessão (— ou –) nem hífens isolados. Use vírgulas ou pontos naturais.
-3. DIMENSIONAMENTO PERFEITO: Mantenha os textos curtos e concisos (headline máx 75 caracteres, subtítulo máx 100 caracteres) para caberem com folga e elegância na proporção 4:5 vertical (1080x1350) sem NENHUM corte.
-4. O slide 1 deve ser um HOOK forte. O slide final deve ser um CTA direto para a DM da @innovarymidia.
+DIRETRIZES FUNDAMENTAIS DE DESIGN E COPY:
+1. JAMAIS use o caractere & em nenhum lugar. Sempre escreva "e".
+2. JAMAIS use travessão (— ou –) nem hífens isolados no texto.
+3. CONCISÃO ABSOLUTA: Textos ultra enxutos (headline máx 75 caracteres, subtítulo máx 95 caracteres) para caber perfeitamente na proporção 4:5 vertical (1080x1350) sem corte.
+4. Lâmina 1: Gancho forte instigando o dono de delivery.
+5. Lâmina final (slide ${input.slideCount}): CTA para mandar mensagem no direct da @innovarymidia.
 
-Retorne APENAS um JSON válido:
+Retorne SOMENTE um JSON válido com a seguinte estrutura:
 {
   "slides": [
     {
       "slideNumber": 1,
-      "totalSlides": ${input.slideCount},
       "type": "hook",
-      "badge": "ALERTA PARA DONOS DE DELIVERY",
-      "headline": "Título curto e instigante",
-      "subtitle": "Subtítulo conciso",
+      "badge": "ALERTA PARA DELIVERY",
+      "headline": "Título instigante",
+      "subtitle": "Subtítulo enxuto",
       "ctaButtonText": "Arraste para entender ➔"
     }
   ],
-  "caption": "Legenda completa formatada com chamada para o direct da @innovarymidia",
+  "caption": "Legenda persuasiva completa com quebras de linha e chamada para o direct da @innovarymidia",
   "hashtags": ["#marketingparadelivery", "#gestaodetrafego", "#innovarymidia"]
 }`;
 
-      const result = await model.generateContent(prompt);
-      const text = result.response.text().trim();
-      const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
-
-      if (parsed.slides && Array.isArray(parsed.slides) && parsed.slides.length > 0) {
-        parsed.slides.forEach((s: any, idx: number) => {
-          s.id = `slide-${idx + 1}`;
-          s.slideNumber = idx + 1;
-          s.totalSlides = parsed.slides.length;
-          s.headline = sanitizeText(s.headline);
-          s.subtitle = sanitizeText(s.subtitle);
-          s.badge = sanitizeText(s.badge);
+    // 1. Tenta via OpenRouter se chave configurada
+    if (openrouterKey) {
+      try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openrouterKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+          }),
         });
-        return {
-          slides: parsed.slides,
-          caption: sanitizeText(parsed.caption),
-          hashtags: parsed.hashtags || [],
-        };
+
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices?.[0]?.message?.content || '';
+          const cleanJson = content.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanJson);
+          if (parsed.slides && Array.isArray(parsed.slides) && parsed.slides.length > 0) {
+            parsed.slides.forEach((s: any, idx: number) => {
+              s.id = ensureUUID();
+              s.slideNumber = idx + 1;
+              s.totalSlides = parsed.slides.length;
+              s.headline = sanitizeText(s.headline);
+              s.subtitle = sanitizeText(s.subtitle);
+              s.badge = sanitizeText(s.badge);
+            });
+            return {
+              slides: parsed.slides,
+              caption: sanitizeText(parsed.caption),
+              hashtags: parsed.hashtags || [],
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('OpenRouter call error:', err);
       }
-    } catch (e) {
-      console.warn('Gemini API call skipped or failed, using built-in strategic engine', e);
     }
+
+    // 2. Tenta via Google Gemini
+    if (geminiKey) {
+      try {
+        const genAI = new GoogleGenerativeAI(geminiKey);
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const result = await model.generateContent(prompt);
+        const text = result.response.text().trim();
+        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
+
+        if (parsed.slides && Array.isArray(parsed.slides) && parsed.slides.length > 0) {
+          parsed.slides.forEach((s: any, idx: number) => {
+            s.id = ensureUUID();
+            s.slideNumber = idx + 1;
+            s.totalSlides = parsed.slides.length;
+            s.headline = sanitizeText(s.headline);
+            s.subtitle = sanitizeText(s.subtitle);
+            s.badge = sanitizeText(s.badge);
+          });
+          return {
+            slides: parsed.slides,
+            caption: sanitizeText(parsed.caption),
+            hashtags: parsed.hashtags || [],
+          };
+        }
+      } catch (e) {
+        console.warn('Gemini API call skipped or failed, using built-in strategic engine', e);
+      }
+    }
+
     return null;
   }
 }

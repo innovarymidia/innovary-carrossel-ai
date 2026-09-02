@@ -1,5 +1,6 @@
 import React from 'react';
-import { Flame, Download, Settings, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Download, Settings, ExternalLink, ShieldCheck } from 'lucide-react';
+import { INNOVARY_LOGO_URL } from '../lib/brandLogo';
 
 interface HeaderProps {
   onOpenSettings: () => void;
@@ -20,10 +21,13 @@ export const Header: React.FC<HeaderProps> = ({
         {/* LOGO E IDENTIFICAÇÃO DA MARCA */}
         <div className="flex items-center gap-3">
           <div 
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-glowSm"
-            style={{ background: 'linear-gradient(135deg, #FF3D00 0%, #EA580C 100%)' }}
+            className="w-10 h-10 rounded-full overflow-hidden border border-brand-orange/40 flex items-center justify-center shadow-glowSm bg-zinc-900 shrink-0"
           >
-            <Flame className="w-6 h-6 text-white" />
+            <img 
+              src={INNOVARY_LOGO_URL} 
+              alt="Innovary Mídia" 
+              className="w-full h-full object-cover rounded-full" 
+            />
           </div>
           <div>
             <div className="flex items-center gap-2">

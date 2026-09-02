@@ -13,6 +13,10 @@ export const metadata: Metadata = {
     'gestão de tráfego restaurante',
   ],
   authors: [{ name: 'Innovary Mídia', url: 'https://www.innovarymidia.com.br' }],
+  icons: {
+    icon: '/innovary-logo-circle.png',
+    apple: '/innovary-logo-circle.png',
+  },
 };
 
 export default function RootLayout({

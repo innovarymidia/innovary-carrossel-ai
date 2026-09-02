@@ -2,6 +2,7 @@ import React, { forwardRef } from 'react';
 import { SlideData, ThemeStyle } from '../lib/types';
 import { THEME_CONFIGS } from '../lib/presets';
 import { sanitizeText } from '../lib/sanitizer';
+import { INNOVARY_LOGO_BASE64 } from '../lib/brandLogo';
 import { 
   Flame, 
   AlertTriangle, 
@@ -118,19 +119,31 @@ export const SlideCanvas = forwardRef<HTMLDivElement, SlideCanvasProps>(
           className="relative z-10 flex items-center justify-between w-full border-b pb-3 mb-2 shrink-0"
           style={{ borderColor: themeStyle === 'clean_authority' ? '#E5E7EB' : 'rgba(255, 255, 255, 0.1)' }}
         >
-          {/* Perfil Innovary Mídia */}
+          {/* Perfil Innovary Mídia com Logo Circular Oficial */}
           <div className="flex items-center gap-2.5">
             <div 
-              className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white shadow-md"
-              style={{ background: 'linear-gradient(135deg, #FF3D00, #EA580C)' }}
+              className={`rounded-full overflow-hidden flex items-center justify-center shadow-md shrink-0 border ${
+                isExporting ? 'w-14 h-14 border-2' : 'w-8 h-8 border'
+              }`}
+              style={{ borderColor: config.accent, background: '#1c1c1e' }}
             >
-              <Flame className="w-4 h-4 text-white" />
+              <img 
+                src={INNOVARY_LOGO_BASE64} 
+                alt="Innovary Mídia" 
+                className="w-full h-full object-cover rounded-full"
+              />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-xs tracking-tight leading-none" style={{ color: config.textColor }}>
+              <span 
+                className={`font-bold tracking-tight leading-none ${isExporting ? 'text-2xl' : 'text-xs'}`} 
+                style={{ color: config.textColor }}
+              >
                 Innovary Mídia
               </span>
-              <span className="text-[10px] font-medium tracking-wide mt-0.5" style={{ color: config.textMuted }}>
+              <span 
+                className={`font-medium tracking-wide mt-0.5 ${isExporting ? 'text-lg' : 'text-[10px]'}`} 
+                style={{ color: config.textMuted }}
+              >
                 {authorHandle}
               </span>
             </div>

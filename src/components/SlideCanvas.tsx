@@ -125,7 +125,7 @@ export const SlideCanvas = forwardRef<HTMLDivElement, SlideCanvasProps>(
               className={`rounded-full overflow-hidden flex items-center justify-center shadow-md shrink-0 border ${
                 isExporting ? 'w-14 h-14 border-2' : 'w-8 h-8 border'
               }`}
-              style={{ borderColor: config.accent, background: '#1c1c1e' }}
+              style={{ borderColor: config.accent, background: '#0d0b0b' }}
             >
               <img 
                 src={INNOVARY_LOGO_BASE64} 

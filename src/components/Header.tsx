@@ -21,7 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* LOGO E IDENTIFICAÇÃO DA MARCA */}
         <div className="flex items-center gap-3">
           <div 
-            className="w-10 h-10 rounded-full overflow-hidden border border-brand-orange/40 flex items-center justify-center shadow-glowSm bg-zinc-900 shrink-0"
+            className="w-10 h-10 rounded-full overflow-hidden border border-brand-orange/40 flex items-center justify-center shadow-glowSm bg-[#0d0b0b] shrink-0"
           >
             <img 
               src={INNOVARY_LOGO_URL} 
